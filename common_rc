@@ -1,0 +1,120 @@
+extension='.engr.colostate.edu' # the extension name of the computer. e.g. frost is engr.colostate.edu, riviera is .colostate.edu
+machine_name='' # hard overwite the appearance of the machine name, but not actually for scp. e.g. riviera's name is "login001". I don't like this - I have this changed to "riviera" on riviera.
+
+
+# my alias I use all the time
+alias lj='ls -ltr --color=auto'
+
+
+function gen_scp() {
+    local user=$(whoami)
+    local machine=$(hostname)
+    local source_path=$(realpath "$1")
+
+    # Append extension only if defined
+    if [[ -n "$extension" ]]; then
+        machine="${machine}${extension}"
+    fi
+
+    # Check if the input is a directory and add the -r flag if necessary
+    if [ -d "$1" ]; then
+        echo "scp -r ${user}@${machine}:${source_path} ."
+    else
+        echo "scp ${user}@${machine}:${source_path} ."
+    fi
+}
+
+alias pull='gen_scp'
+
+## chunk
+chunk() {
+    local file="$1"
+    local start_line="$2"
+    local end_line="$3"
+
+    if [[ -z "$file" || -z "$start_line" || -z "$end_line" ]]; then
+        echo "Usage: chunk <file> <start_line> <end_line>"
+        return 1
+    fi
+
+    if [[ ! -f "$file" ]]; then
+        echo "File not found: $file"
+        return 1
+    fi
+
+    if ! [[ "$start_line" =~ ^[0-9]+$ && "$end_line" =~ ^[0-9]+$ ]]; then
+        echo "Start and end lines must be integers."
+        return 1
+    fi
+
+    if (( start_line > end_line )); then
+        echo "Start line must be less than or equal to end line."
+        return 1
+    fi
+
+    sed -n "${start_line},${end_line}p" "$file"
+}
+
+## uniform prompt
+CYAN="\[\033[0;36m\]"
+GREEN="\[\033[0;32m\]"
+RED="\[\033[0;31m\]"
+LIGHT_PURPLE="\[\e[38;2;173;143;247m\]"
+HOT_PINK="\[\e[38;2;255;105;180m\]"
+COLOR_NONE="\[\e[0m\]"
+
+function generate_ps1 {
+    # Store previous exit code. This has to come first.
+    local EC="$?"
+
+    # Colorize previous exit code
+    if [ "$EC" != '0' ]; then
+        EC="${RED}${EC}${COLOR_NONE}"
+    else
+        EC="${GREEN}${EC}${COLOR_NONE}"
+    fi
+
+    # Colorize current path
+    local CP="${HOT_PINK}\W${COLOR_NONE}"
+
+    # Get git status for current path if git_prompt.sh has been executed
+    local GS=""
+    if [ -n "$GIT_PS1_SHOWSTATUSSTRING" ]; then
+        GS="$(__git_ps1 "[%s]")"
+    fi
+
+   # set_condaenv
+
+    # Get timestamp
+    local TS="${RED}\t${COLOR_NONE}"
+
+    # Get user and hostname
+    # local UH="${GREEN}\u@\h${COLOR_NONE}"
+
+    # Check if the hostname is being overwritten by user 
+    if [[ -z "$machine_name" ]]; then
+        machine_name=$(hostname)
+    fi
+
+    # Update the prompt to include machine_name
+    local UH="${GREEN}\u@${machine_name}${COLOR_NONE}"
+
+    if [[ $EUID -eq 0 ]]; then
+        PROMPT_CHAR="#"
+    else
+        PROMPT_CHAR="$"
+    fi
+
+    # solve conda path and colorize cyan
+    if test -z "$CONDA_DEFAULT_ENV" ; then
+            CONDA_VIRTUALENV=""
+    else
+            CONDA_VIRTUALENV="(${CYAN}$(basename $CONDA_DEFAULT_ENV)${COLOR_NONE}) "
+    fi
+
+    PS1="${CONDA_VIRTUALENV}[$TS $UH $CP] $GS${PROMPT_CHAR} "
+}
+
+PROMPT_COMMAND=generate_ps1
+
+
