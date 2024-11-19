@@ -1,0 +1,57 @@
+wget https://repo.anaconda.com/archive/Anaconda3-2023.03-1-Linux-x86_64.sh
+chmod -v +x Anaconda3-2023.03-1-Linux-x86_64.sh
+echo "95102d7c732411f1458a20bdf47e4c1b0b6c8a21a2edfe4052ca370aaae57bab *Anaconda3-2023.03-1-Linux-x86_64.sh" | shasum --check
+    >> EXPECTED OUTPUT: Anaconda3-2023.03-1-Linux-x86_64.sh: OK
+    >> If result is not "OK", try redownloading and reverifying. If that still doesn't work, consult the following webpages:
+    >> https://learnubuntu.com/install-conda/
+    >> https://docs.anaconda.com/free/anaconda/install/linux/
+    >> https://docs.anaconda.com/free/anaconda/reference/hashes/lin-3-64/
+./Anaconda3-2023.03-1-Linux-x86_64.sh
+    >> say 'yes' or 'ENTER' to everything *EXCEPT* the last question, 'Should the installer run conda init on your behalf?'. Say 'no'
+    >> edit .bashrc, add the following contents:
+if ! [[ $PATH =~ "$HOME/anaconda3/bin" ]]; then
+    PATH="$HOME/anaconda3/bin:$PATH"
+fi
+source ~/.bashrc
+conda env list
+    >> expected output is something like:
+    >> # conda environments:
+    >> #
+    >> base                     /home/jderoo/anaconda3
+
+ps -p $$
+    >> double check which shell we're using; probably bash but you never know.
+    >> expected output:
+    >>    PID TTY          TIME CMD
+    >> 115093 pts/2    00:00:00 bash
+    >> As we can see here ------^^^^--- we are running bash. If you aren't, fill in the blank for the next step.
+conda init bash
+ctrl-D or exit
+    >> resign in, conda suggests a compelete relog instead of sourcing .bashrc
+    >> now delete the 3 conda pathing lines we did above from your .bashrc file! conda will have rewritten it more ellegantly. 
+conda env list
+    >> expected output is slightly different than last time, should look like:
+    >>
+    >> # conda environments:
+    >> #
+    >> base                  *  /home/jderoo/anaconda3
+    >>
+    >> additionally, you should now see (base) to the left of your username info. for example jderoo logged into machine 'frost' looks like:
+    >> (base) jderoo@frost:~$
+    >> great, you now have anaconda3 running and installed! 
+rm Anaconda3-2023.03-1-Linux-x86_64.sh
+    >> for a good default scientific & engineering environment, here's my default go-to creation. It has no GPU connectivity! (tensorflow, pytorch, keras):
+conda create -n py39 python=3.9 biopython numpy scipy matplotlib pandas networkx sympy pip -c conda-forge
+    >> if you're unfaimilar with how environments work, you should never ever ever download stuff into base! always create a new environment. 
+    >> Because I'm lazy, I then like to add the following line to my .bashrc AFTER the conda initialization so that our new environment will auto load in, ad we can leave our base environment alone.
+conda activate py39
+source ~/.bashrc
+conda env list
+    >> expected output:
+    >>
+    >> # conda environments:
+    >> #
+    >> base                     /home/jderoo/anaconda3
+    >> py39                  *  /home/jderoo/anaconda3/envs/py39
+    >>
+    >> the astrisk (*) is now next to py39, meaning it is the active environment. Additionally, on the command line, your environment should have change to (py39). Continuing off of the afforementioned example, mine is (py39) jderoo@frost:~$ 
